@@ -97,9 +97,11 @@ c
       do while ( sflag .eq. 1 .and. eflag .eq. 1 )
 c
 c*TDR   path traveled comes from random sampling of optical
-c       depth
+c       depth.
+c       12/2020 - generalized random number treatment, per mick
 c
-        rnum = ran(iseed)
+c        rnum = ran(iseed)
+        call random_number(rnum)
         tau0 = -LOG(1 - rnum)
 c
 c*TDR   ray trace the photon through the atmosphere until it
@@ -265,7 +267,12 @@ c
                 endif
 c
 c*TDR           terms for solving quadratic, same as above.
+c               12/2020 - introduced mick's correction to prevent square 
+c               root of negative numbers
 c
+                x = x*(radius + alt(1))/r
+                y = y*(radius + alt(1))/r
+                z = z*(radius + alt(1))/r
                 r0 = (y**2 + z**2)**0.5
                 bq = -2*( muz*(r0*cos(theta) - b) + muy*r0*sin(theta) + 
      -                    mux*(- ((radius + alt(1))**2 - r0**2)**0.5 ) +
@@ -310,14 +317,22 @@ c         goto statement is due to tiny numerical errors in
 c         computing mus, where a particular rnum causes mus 
 c         to be a tiny smidge above unity.  in that case, 
 c         we just re-do the sampling.
+c         12/2020 - re-organized to check if g ~ 0 and 
+c         apply correct conditions, following mick's guidance
 c
 2501      continue
-          rnum  = ran(iseed)
-          mus   = (1 + g(iz)**2 - ((1 - g(iz)**2)/(1 - 
-     -             g(iz) + 2*g(iz)*rnum))**2.)/(2*g(iz))
-          if( g(iz) .lt. 0.001 ) mus = 1 - 2*ran(iseed)
+c          rnum  = ran(iseed)
+          call random_number(rnum)
+          if( g(iz) .lt. 0.001 ) then
+            mus = 1 - 2*rnum
+          else
+            mus   = (1 + g(iz)**2 - ((1 - g(iz)**2)/(1 - 
+     -               g(iz) + 2*g(iz)*rnum))**2.)/(2*g(iz))
+          endif
           if( ABS(mus) .gt. 1. ) goto 2501
-          phis  = 2*pi*ran(iseed)
+          call random_number(rnum)
+c          phis  = 2*pi*ran(iseed)
+          phis  = 2*pi*rnum
 c
 c*TDR     special case for photons travelling straight down or
 c         up, otherwise use standard logic
