@@ -81,8 +81,12 @@ c
       save mc
 c
 c*TDR seed random number generator
+c     12/2020 - generalized following guidance from mick,
+c               iseed is now deprecated
 c
-      call system_clock(iseed)
+c      call system_clock(iseed)
+      iseed = 0
+      call random_seed()
 c
 c**** define avagadro's number (mks units: molecules/kmole)
 c
